@@ -68,7 +68,8 @@ class SmoothNoise:
 NOISE = None
 
 class Palette:
-    def __init__(self, sky_top, sky_bottom, far_mount, mid_mount, ground_dark, ground_light, accent, cloud_color, vine_color, water_color, sun_color, moon, structure_base, rune_color, strata_colors, liquid_type='water'):
+    def __init__(self, name, sky_top, sky_bottom, far_mount, mid_mount, ground_dark, ground_light, accent, cloud_color, vine_color, water_color, sun_color, moon, structure_base, rune_color, strata_colors, liquid_type='water'):
+        self.name = name
         self.sky_top = sky_top
         self.sky_bottom = sky_bottom
         self.far_mount = far_mount
@@ -89,6 +90,7 @@ class Palette:
 BIOMES = [
     # Forest - Day
     Palette(
+        "forest",
         (100, 180, 255), (200, 240, 255),   
         (130, 150, 180),                   
         (90, 110, 100),                     
@@ -105,6 +107,7 @@ BIOMES = [
     ),
     # Sunset Desert
     Palette(
+        "desert",
         (100, 40, 80), (255, 150, 80),     
         (180, 100, 80),                    
         (160, 80, 50),                     
@@ -121,6 +124,7 @@ BIOMES = [
     ),
      # Corruption - Night
     Palette(
+        "corruption",
         (10, 0, 20), (50, 20, 70),         
         (50, 40, 70),                      
         (50, 30, 60),                      
@@ -137,6 +141,7 @@ BIOMES = [
     ),
     # Volcanic - Obsidian/Lava
     Palette(
+        "volcanic",
         (20, 10, 10), (80, 30, 20),         # Dark red sky
         (50, 40, 40),                      # Brighter dark mts
         (40, 30, 30),                      
@@ -749,11 +754,20 @@ def draw_lantern(pixels, x, ground_y, seed, palette):
                  ))
 
 
-def generate_landscape(output_path):
+def generate_landscape(output_path, biome_name=None):
     global NOISE
     seed = random_seed()
     NOISE = SmoothNoise(seed)
-    biome = random.choice(BIOMES)
+    
+    biome = None
+    if biome_name:
+        for b in BIOMES:
+            if b.name.lower() == biome_name.lower():
+                biome = b
+                break
+    
+    if not biome:
+        biome = random.choice(BIOMES)
     
     img = Image.new('RGB', (WIDTH, HEIGHT), biome.sky_top)
     draw = ImageDraw.Draw(img)
@@ -1289,7 +1303,8 @@ def generate_landscape(output_path):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python generate_landscape.py <output_path>")
+        print("Usage: python generate_landscape.py <output_path> [biome_name]")
         sys.exit(1)
     
-    generate_landscape(sys.argv[1])
+    biome_arg = sys.argv[2] if len(sys.argv) > 2 else None
+    generate_landscape(sys.argv[1], biome_arg)

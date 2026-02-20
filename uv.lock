@@ -61,7 +61,7 @@ wheels = [
 ]
 
 [[package]]
-name = "velvet-celestial"
+name = "terminal-worlds"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

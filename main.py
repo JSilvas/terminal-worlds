@@ -1,5 +1,5 @@
 def main():
-    print("Hello from velvet-celestial!")
+    print("Hello from terminal-worlds!")
 
 
 if __name__ == "__main__":
