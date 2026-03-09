@@ -126,6 +126,12 @@ Repeat until all checks pass. Only then flip the label:
 gh issue edit <N> --add-label in-review --remove-label in-progress
 ```
 
+**Retry limit:** CI allows **3 attempts** before escalating to a human. Each
+failure comment shows the attempt count (`attempt N/3`). If the PR receives a
+comment saying "human review required", the agent **must stop immediately** —
+do not push further commits. The issue will be labeled `blocked` automatically;
+a human will triage and either fix directly or reopen the issue for a fresh agent.
+
 ---
 
 ## Issue Conventions
@@ -139,7 +145,7 @@ pick them up:
 | `in-progress` | Claimed and being worked on |
 | `in-review` | PR open, awaiting CI + human review |
 | `done` | Merged and complete |
-| `blocked` | Cannot proceed — human input required |
+| `blocked` | Cannot proceed — set automatically after 3 CI failures, or manually by agent/human |
 | `enhancement` | New feature |
 | `bug` | Regression or defect |
 | `harness` | Improvements to test/CI infrastructure |
