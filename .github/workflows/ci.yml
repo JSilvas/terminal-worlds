@@ -14,6 +14,8 @@ jobs:
   ci:
     name: CI (Python 3.13)
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write  # needed to post PR comments
 
     steps:
       - uses: actions/checkout@v4
@@ -30,11 +32,77 @@ jobs:
         run: uv sync --frozen
 
       - name: Run tests
-        run: uv run pytest tests/ -v --tb=short
+        id: tests
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          uv run pytest tests/ -v --tb=short 2>&1 | tee /tmp/pytest-output.txt
 
       - name: Check syntax
+        id: syntax
+        continue-on-error: true
         run: uv run python -m py_compile generate_landscape.py main.py
 
       - name: Lint (advisory)
         run: uv run --with ruff ruff check . --select E,F --ignore E501,E741 || true
         # || true: ruff is advisory until the baseline is clean
+
+      # Posts a comment on the PR so the implementing agent can read the result
+      # without waiting for a human to relay it. Runs whether checks passed or failed.
+      - name: Post CI result to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const testsPassed  = '${{ steps.tests.outcome }}'  === 'success';
+            const syntaxPassed = '${{ steps.syntax.outcome }}' === 'success';
+            const allPassed    = testsPassed && syntaxPassed;
+
+            let body;
+            if (allPassed) {
+              body = [
+                '### CI passed',
+                '',
+                'All checks green. This PR is ready for human review.',
+              ].join('\n');
+            } else {
+              const failed = [
+                !testsPassed  && 'tests',
+                !syntaxPassed && 'syntax check',
+              ].filter(Boolean).join(', ');
+
+              const output = fs.existsSync('/tmp/pytest-output.txt')
+                ? fs.readFileSync('/tmp/pytest-output.txt', 'utf8').slice(-4000)
+                : '(no output captured)';
+
+              body = [
+                `### CI failed (${failed}) — agent action required`,
+                '',
+                '<details><summary>pytest output</summary>',
+                '',
+                '```',
+                output,
+                '```',
+                '',
+                '</details>',
+                '',
+                '**Implementing agent:** do not flip to `in-review` until this is green.',
+                '1. Reproduce locally: `uv run pytest tests/ -v --tb=short`',
+                '2. Fix, commit, and push to this branch',
+                '3. CI will re-run automatically',
+              ].join('\n');
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+
+      # Fail the job after the comment is posted so GitHub marks the PR red
+      - name: Enforce check results
+        if: steps.tests.outcome == 'failure' || steps.syntax.outcome == 'failure'
+        run: exit 1

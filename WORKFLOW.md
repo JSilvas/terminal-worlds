@@ -26,12 +26,13 @@ Agents are dispatched to GitHub Issues. Each issue represents one unit of work.
 Issues progress through states via labels:
 
 ```
-todo → in-progress → in-review → done
+todo → in-progress → [CI gate] → in-review → done
 ```
 
 A human or orchestrating agent assigns `todo` issues. Background agents claim issues
-by flipping the label to `in-progress`. When the PR is up, the label flips to
-`in-review`. When merged, GitHub auto-closes the issue and a human applies `done`.
+by flipping the label to `in-progress`. The agent opens a PR, waits for CI, and
+self-remediates any failures before flipping to `in-review`. A human then reviews
+and merges; GitHub auto-closes the issue.
 
 ---
 
@@ -90,8 +91,38 @@ git push -u origin claude/<slug>-<session-id>
 
 # GitHub will pre-fill the body from .github/PULL_REQUEST_TEMPLATE.md
 gh pr create --title "<Issue title>" --body-file .github/PULL_REQUEST_TEMPLATE.md
+```
 
-# Update issue label
+**Do not flip to `in-review` yet.** Proceed to step 6.
+
+### 6. Monitor CI and self-remediate
+
+Block until all checks finish (usually 1–2 min):
+
+```bash
+gh pr checks --watch
+```
+
+CI will post a comment on the PR with the full test output — pass or fail.
+The agent must read that comment and act on it before a human ever sees the PR.
+
+**If any check fails:**
+
+```bash
+# Reproduce the failure locally first
+uv run pytest tests/ -v --tb=short
+
+# Fix, commit, push — CI reruns automatically on each push
+git commit -m "fix: ..."
+git push
+
+# Confirm green before continuing
+gh pr checks --watch
+```
+
+Repeat until all checks pass. Only then flip the label:
+
+```bash
 gh issue edit <N> --add-label in-review --remove-label in-progress
 ```
 
