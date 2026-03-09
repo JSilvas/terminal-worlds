@@ -88,20 +88,8 @@ Before opening a PR an agent MUST verify:
 ```bash
 git push -u origin claude/<slug>-<session-id>
 
-gh pr create \
-  --title "<Issue title>" \
-  --body "$(cat <<'EOF'
-## Summary
-<what changed and why>
-
-## Verification
-- [ ] All 4 biomes generate without error
-- [ ] `uv run pytest tests/ -v` passes
-- [ ] Visual check: attach or describe what the output looks like
-
-Closes #<N>
-EOF
-)"
+# GitHub will pre-fill the body from .github/PULL_REQUEST_TEMPLATE.md
+gh pr create --title "<Issue title>" --body-file .github/PULL_REQUEST_TEMPLATE.md
 
 # Update issue label
 gh issue edit <N> --add-label in-review --remove-label in-progress

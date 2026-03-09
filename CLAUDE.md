@@ -142,42 +142,8 @@ Tests live in `tests/`. Run with `uv run pytest`.
 
 ---
 
-## Branch & PR Workflow
+## Workflow & Process
 
-1. **Branch name**: `claude/<short-description>-<session-id>` (the session-id suffix is auto-set by the harness; do not invent it)
-2. **One branch per issue** — never put two issues' changes on the same branch
-3. **Commit messages**: Imperative mood, ≤72 chars, e.g. `feat: add snow biome with blizzard effects`
-4. **PR title**: Match the issue title closely
-5. **PR body**: Use the template in `.github/PULL_REQUEST_TEMPLATE.md` if present; otherwise include: what changed, how to verify, and the closing issue reference (`Closes #N`)
-6. **CI must be green** before requesting review — do not open a PR with failing tests
-7. **Never push to `main` or `master`** directly
-
----
-
-## How to Pick Up an Issue
-
-1. Find an open issue labeled `todo` in GitHub Issues
-2. Read the issue fully — check for acceptance criteria and any linked discussion
-3. Add the label `in-progress` and assign yourself (use `gh issue edit N --add-label in-progress`)
-4. Create your branch: `git checkout -b claude/<slug>-<session-id>`
-5. Implement the feature/fix. Run `uv run pytest` to validate.
-6. Push and open a PR: `gh pr create ...`
-7. Add label `in-review` to the issue and remove `in-progress`
-8. When the PR merges, the issue should be auto-closed via `Closes #N` in the PR body
-
----
-
-## Blockers & Communication
-
-- If you are blocked (missing information, ambiguous spec, test infrastructure broken), leave a comment on the issue explaining the blocker and remove the `in-progress` label so another agent or human can pick it up
-- Do not silently stall — always leave a trail
-- Do not modify `main`, `master`, or another agent's in-progress branch
-
----
-
-## Background Agent Concurrency
-
-- Multiple background agents may run simultaneously; each works on a separate issue
-- Agents share no in-memory state — all coordination happens through git branches and GitHub issue labels
-- If two agents open PRs that touch the same file, standard git conflict resolution applies — rebase on `main` before pushing
-- Maximum recommended concurrent agents: **3** (to avoid overwhelming CI runners)
+For issue labels, agent lifecycle (claim → implement → validate → submit), PR
+conventions, concurrency rules, and human–agent collaboration, see
+**[WORKFLOW.md](WORKFLOW.md)**. Do not duplicate those rules here.
