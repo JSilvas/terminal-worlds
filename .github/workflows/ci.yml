@@ -30,15 +30,13 @@ jobs:
         run: uv python install 3.13
 
       - name: Install dependencies
-        run: uv sync --frozen
+        run: uv sync --frozen --dev
 
       - name: Run tests
         id: tests
         continue-on-error: true
         shell: bash
-        run: |
-          set -o pipefail
-          uv run pytest tests/ -v --tb=short 2>&1 | tee /tmp/pytest-output.txt
+        run: uv run pytest tests/ -v --tb=short 2>&1 | tee /tmp/pytest-output.txt; exit "${PIPESTATUS[0]}"
 
       - name: Check syntax
         id: syntax
