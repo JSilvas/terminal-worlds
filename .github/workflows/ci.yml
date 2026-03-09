@@ -19,11 +19,16 @@ jobs:
       issues: write         # manage labels on escalation
 
     steps:
+      - name: Debug runner environment
+        run: |
+          echo "GITHUB_SERVER_URL=${GITHUB_SERVER_URL}"
+          echo "GITHUB_REPOSITORY=${GITHUB_REPOSITORY}"
+          echo "GITHUB_SHA=${GITHUB_SHA}"
+          echo "GITEA_SERVER_URL=${GITEA_SERVER_URL:-not set}"
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          # Gitea does not expose refs/pull/N/merge (GitHub's virtual merge ref).
-          # Using the commit SHA directly works for both push and PR events.
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
