@@ -26,6 +26,8 @@ Restart or `source ~/.zshrc`. The pool will warm on first session.
 
 **Requirements:** iTerm2, `uv`, Python 3.13+, Pillow (managed via `uv`).
 
+**Recommended:** Go into Settings/Profile/Window/ and change background image scaling to "Scale to Fit".
+
 ---
 
 ## Usage
