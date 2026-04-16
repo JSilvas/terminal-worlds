@@ -1,0 +1,74 @@
+name: Bug
+description: Something is broken or produces wrong output
+title: "fix: "
+labels: ["bug", "todo"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Fill out all sections. Agents use this structure to reproduce and fix without follow-up.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug description
+      description: What is happening? What did you expect?
+      placeholder: "When running `world corruption`, the image is all black instead of..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Exact commands and conditions that trigger the bug
+      placeholder: |
+        1. `uv run generate_landscape.py --biome corruption --output /tmp/test.png`
+        2. Open /tmp/test.png
+        3. Observe: entire image is solid black
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: |
+        - OS: macOS 15.3
+        - Python: 3.13.1
+        - Pillow: 12.1.0
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How do we know the bug is fixed?
+      placeholder: |
+        - [ ] `generate_landscape(path, 'corruption')` produces a visible, non-black image
+        - [ ] Existing tests still pass
+        - [ ] New regression test added to prevent recurrence
+    validations:
+      required: true
+
+  - type: textarea
+    id: references
+    attributes:
+      label: Relevant code locations
+      placeholder: |
+        - `generate_landscape.py:795` — celestial body rendering, likely culprit
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - p0 — critical
+        - p1 — high
+        - p2 — medium
+        - p3 — low
+    validations:
+      required: true

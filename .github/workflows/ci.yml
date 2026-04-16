@@ -1,0 +1,180 @@
+name: CI
+
+on:
+  push:
+    branches-ignore:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  ci:
+    name: CI (Python 3.13)
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write  # post PR comments
+      issues: write         # manage labels on escalation
+
+    steps:
+      - uses: actions/checkout@v4
+        env:
+          # This Gitea instance serves repos under a /git/ subpath.
+          # Appending /git to GITHUB_SERVER_URL makes actions/checkout
+          # construct the correct clone URL: https://…/git/JSilvas/terminal-worlds
+          GITHUB_SERVER_URL: https://github.com/git
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync --frozen --dev
+
+      - name: Run tests
+        id: tests
+        continue-on-error: true
+        shell: bash
+        run: uv run python -m pytest tests/ -v --tb=short 2>&1 | tee /tmp/pytest-output.txt; exit "${PIPESTATUS[0]}"
+
+      - name: Check syntax
+        id: syntax
+        continue-on-error: true
+        run: uv run python -m py_compile generate_landscape.py main.py
+
+      - name: Lint (advisory)
+        run: uv run --with ruff ruff check . --select E,F --ignore E501,E741 || true
+        # || true: ruff is advisory until the baseline is clean
+
+      # Posts a comment on the PR so the implementing agent can read the result
+      # without waiting for a human to relay it. Runs whether checks passed or failed.
+      # After MAX_AGENT_RETRIES consecutive failures, escalates to human review instead.
+      - name: Post CI result to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs   = require('fs');
+            const MAX_AGENT_RETRIES = 3;
+
+            const testsPassed  = '${{ steps.tests.outcome }}'  === 'success';
+            const syntaxPassed = '${{ steps.syntax.outcome }}' === 'success';
+            const allPassed    = testsPassed && syntaxPassed;
+
+            // Count prior CI failure comments from this bot to detect thrash loops
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 100,
+            });
+            const failureCount = comments.filter(c =>
+              c.user.login === 'github-actions[bot]' &&
+              c.body.includes('CI failed')
+            ).length;
+
+            let body;
+            if (allPassed) {
+              body = [
+                '### CI passed',
+                '',
+                'All checks green. This PR is ready for human review.',
+              ].join('\n');
+            } else if (failureCount >= MAX_AGENT_RETRIES) {
+              // Agent has had enough chances — escalate and lock it out
+              const failed = [
+                !testsPassed  && 'tests',
+                !syntaxPassed && 'syntax check',
+              ].filter(Boolean).join(', ');
+
+              const output = fs.existsSync('/tmp/pytest-output.txt')
+                ? fs.readFileSync('/tmp/pytest-output.txt', 'utf8').slice(-4000)
+                : '(no output captured)';
+
+              body = [
+                `### CI failed (${failed}) — human review required`,
+                '',
+                `This PR has failed CI ${failureCount + 1} times. ` +
+                'The implementing agent has been stood down.',
+                '',
+                '<details><summary>Latest pytest output</summary>',
+                '',
+                '```',
+                output,
+                '```',
+                '',
+                '</details>',
+                '',
+                '**Agent: stop all work on this branch.** ' +
+                'A human reviewer will triage and decide next steps.',
+              ].join('\n');
+
+              // Label the issue blocked so no agent picks it back up
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo:  context.repo.repo,
+                issue_number: context.issue.number,
+                labels: ['blocked'],
+              });
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo:  context.repo.repo,
+                issue_number: context.issue.number,
+                name: 'in-progress',
+              }).catch(() => {});  // ignore if label not present
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo:  context.repo.repo,
+                issue_number: context.issue.number,
+                name: 'in-review',
+              }).catch(() => {});  // ignore if label not present
+            } else {
+              const failed = [
+                !testsPassed  && 'tests',
+                !syntaxPassed && 'syntax check',
+              ].filter(Boolean).join(', ');
+
+              const output = fs.existsSync('/tmp/pytest-output.txt')
+                ? fs.readFileSync('/tmp/pytest-output.txt', 'utf8').slice(-4000)
+                : '(no output captured)';
+
+              const remaining = MAX_AGENT_RETRIES - failureCount - 1;
+
+              body = [
+                `### CI failed (${failed}) — agent action required ` +
+                `(attempt ${failureCount + 1}/${MAX_AGENT_RETRIES})`,
+                '',
+                '<details><summary>pytest output</summary>',
+                '',
+                '```',
+                output,
+                '```',
+                '',
+                '</details>',
+                '',
+                `**Implementing agent:** ${remaining} attempt(s) remaining before human escalation.`,
+                '1. Reproduce locally: `uv run pytest tests/ -v --tb=short`',
+                '2. Fix, commit, and push to this branch',
+                '3. CI will re-run automatically — do not flip to `in-review` until green',
+              ].join('\n');
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+
+      # Fail the job after the comment is posted so GitHub marks the PR red
+      - name: Enforce check results
+        if: steps.tests.outcome == 'failure' || steps.syntax.outcome == 'failure'
+        run: exit 1
