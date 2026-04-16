@@ -19,14 +19,12 @@ jobs:
       issues: write         # manage labels on escalation
 
     steps:
-      - name: Debug runner environment
-        run: |
-          echo "GITHUB_SERVER_URL=${GITHUB_SERVER_URL}"
-          echo "GITHUB_REPOSITORY=${GITHUB_REPOSITORY}"
-          echo "GITHUB_SHA=${GITHUB_SHA}"
-          echo "GITEA_SERVER_URL=${GITEA_SERVER_URL:-not set}"
-
       - uses: actions/checkout@v4
+        env:
+          # This Gitea instance serves repos under a /git/ subpath.
+          # Appending /git to GITHUB_SERVER_URL makes actions/checkout
+          # construct the correct clone URL: https://…/git/JSilvas/terminal-worlds
+          GITHUB_SERVER_URL: https://github.com/git
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
