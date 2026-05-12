@@ -6,7 +6,19 @@ Procedural pixel-art landscapes as iTerm2 terminal backgrounds.
 
 Each new terminal session gets a unique generated image — a different biome, sky, terrain, structures, and lighting — applied automatically via the iTerm2 AppleScript API.
 
-> **Prototype status.** Works end-to-end on macOS/iTerm2. Paths in `update_bg.zsh` and `world.zsh` are currently hardcoded to the dev directory.
+> **Prototype status.** Works end-to-end on macOS/iTerm2. Paths in `update_bg.zsh` and `world.zsh` are currently hardcoded to the dev directory. There is also an experimental Ghostty animated shader background included (`world_shader.glsl`).
+
+---
+
+## Ghostty Animated Background Shader
+
+If you are using the Ghostty terminal emulator, you can use the included GLSL shader for an animated, pixel-art procedural background featuring a day/night cycle, drifting clouds, and wind.
+
+Add the following to your Ghostty config file (on macOS, this is often `~/Library/Application Support/com.mitchellh.ghostty/config` or `config.ghostty`):
+
+```ini
+custom-shader = /Users/jaysilvas/dev/terminal-worlds/world_shader.glsl
+```
 
 ---
 

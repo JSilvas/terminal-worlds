@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo:*)",
+      "Bash(uv run:*)",
+      "Bash(printf:*)",
+      "Bash(osascript:*)"
+    ]
+  }
+}
