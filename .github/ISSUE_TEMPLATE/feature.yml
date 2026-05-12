@@ -1,0 +1,71 @@
+name: Feature
+description: New feature or enhancement — ready for an agent to implement
+title: "feat: "
+labels: ["enhancement", "todo"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Fill out all sections. Agents use this structure to implement without follow-up questions.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context & motivation
+      description: What problem does this solve? Why now?
+      placeholder: "Currently users cannot... This matters because..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature description
+      description: What should the feature do? Be specific.
+      placeholder: "Add a `snow` biome that generates..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Explicit, testable conditions the PR must satisfy. Agents will use these as a checklist.
+      placeholder: |
+        - [ ] `generate_landscape(path, 'snow')` completes without error
+        - [ ] Output is 1920×1080 PNG
+        - [ ] Snow biome appears in `world snow` command
+        - [ ] New test `test_snow_biome` passes
+    validations:
+      required: true
+
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+      description: What should the agent NOT change?
+      placeholder: "Do not modify existing biomes. Do not change the pool size."
+    validations:
+      required: false
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Relevant code locations, prior issues, or design notes
+      placeholder: |
+        - `generate_landscape.py:70` — Palette class to extend
+        - `generate_landscape.py:757` — generate_landscape function signature
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - p1 — high
+        - p2 — medium
+        - p3 — low
+    validations:
+      required: true

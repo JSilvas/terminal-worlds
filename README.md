@@ -1,4 +1,4 @@
-# terminal-worlds
+# Terminal Worlds
 
 Procedural pixel-art landscapes as iTerm2 terminal backgrounds.
 
@@ -19,6 +19,17 @@ Add the following to your Ghostty config file (on macOS, this is often `~/Librar
 ```ini
 custom-shader = /Users/jaysilvas/dev/terminal-worlds/world_shader.glsl
 ```
+
+---
+
+## Biomes
+
+| Biome | Sky | Terrain | Liquid |
+|-------|-----|---------|--------|
+| `forest` | Blue day | Green hills, trees | Water |
+| `desert` | Sunset orange | Sandy dunes, cacti | — |
+| `corruption` | Dark night | Purple terrain, fungi | Toxic |
+| `volcanic` | Dark red | Obsidian, ash | Lava |
 
 ---
 
@@ -45,18 +56,42 @@ Restart or `source ~/.zshrc`. The pool will warm on first session.
 ## Usage
 
 ```zsh
-world              # Swap to next cached background (runs automatically on new session)
-world refresh      # Same as above
-world biome <name> # Generate and apply a specific biome
-world help         # Show commands
+world            # random background for this session
+world forest     # specific biome
+world refresh    # swap to next pre-generated background
+world help       # show all commands
 ```
-
-**Biomes:** `forest`, `desert`, `corruption`, `volcanic`
 
 ---
 
-## Development & Architecture
+## Architecture
 
-This repository is optimized for AI agent context. The code is the source of truth rather than a harness of redundant documentation.
+```
+world.zsh             # user-facing ZSH command
+  └── update_bg.zsh   # pool manager: claim → apply → replenish async
+        └── generate_landscape.py  # core renderer (1310 lines, Pillow)
+```
 
-For a high-level overview of the implementation, components, and current prototype state, see [ARCHITECTURE.md](ARCHITECTURE.md). For all implementation details, please read the code directly.
+The pool (`~/.cache/terminal_worlds/pool/`) keeps 10 pre-rendered images so
+each new terminal session gets an instant background swap. One image is
+replenished asynchronously after each claim.
+
+For a detailed breakdown of rendering stages, biome palettes, and code
+conventions see [ARCHITECTURE.md](ARCHITECTURE.md).
+
+---
+
+## Contributing
+
+Create issues using the templates in `.github/ISSUE_TEMPLATE/`. Label them
+`todo` when they are ready for an agent to pick up. See [WORKFLOW.md](WORKFLOW.md)
+for the full agent collaboration protocol, and [CLAUDE.md](CLAUDE.md) for
+architecture details and agent guidelines.
+
+```bash
+# Run the generator directly
+uv run generate_landscape.py /tmp/test.png forest
+
+# Run tests
+uv run pytest tests/ -v
+```
